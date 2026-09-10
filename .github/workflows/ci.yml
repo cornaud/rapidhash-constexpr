@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} - ${{ matrix.compiler.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler:
+              name: gcc
+              cc: gcc
+              cxx: g++
+
+          - os: ubuntu-latest
+            compiler:
+              name: clang
+              cc: clang
+              cxx: clang++
+
+          - os: windows-2022
+            compiler:
+              name: clang
+              cc: clang
+              cxx: clang++
+
+          - os: windows-2022
+            compiler:
+              name: msvc
+              cc: cl
+              cxx: cl
+
+          - os: macos-latest
+            compiler:
+              name: clang
+              cc: clang
+              cxx: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Set up compiler (Ubuntu - GCC)
+        if: runner.os == 'Linux' && matrix.compiler.name == 'gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Set up compiler (Ubuntu - Clang)
+        if: runner.os == 'Linux' && matrix.compiler.name == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Set up compiler (Windows - Clang)
+        if: runner.os == 'Windows' && matrix.compiler.name == 'clang'
+        run: |
+          choco install llvm -y --no-progress
+
+      - name: Set up compiler (macOS - Clang)
+        if: runner.os == 'macOS' && matrix.compiler.name == 'clang'
+        run: |
+          xcode-select --install || true
+
+      - name: Configure CMake (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure CMake (Windows - MSVC)
+        if: runner.os == 'Windows' && matrix.compiler.name == 'msvc'
+        run: |
+          cmake -B build -G "Visual Studio 17 2022"
+
+      - name: Configure CMake (Windows - Clang)
+        if: runner.os == 'Windows' && matrix.compiler.name == 'clang'
+        shell: bash
+        run: |
+          cmake -B build \
+            -G "Ninja" \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test - base (UNROLLED + CEXPR_ALLOW_CLASS_REPR)
+        run: ctest --build-config Release --test-dir build --verbose -R test_base
+
+      - name: Test - portable (UNROLLED + CEXPR_ALLOW_CLASS_REPR + CEXPR_FORCE_PORTABLE_MUL)
+        run: ctest --build-config Release --test-dir build --verbose -R test_portable
+
+      - name: Test - protected (UNROLLED + CEXPR_ALLOW_CLASS_REPR + PROTECTED) - Clang only
+        if: matrix.compiler.name == 'clang'
+        run: ctest --build-config Release --test-dir build --verbose -R test_protected
