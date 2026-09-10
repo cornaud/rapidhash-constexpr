@@ -46,6 +46,12 @@ jobs:
       - name: Set up CMake
         uses: lukka/get-cmake@latest
 
+      # Explicitly prepare the Visual Studio environment on Windows.
+      # This makes the VS installation discoverable by CMake.
+      - name: Set up Visual Studio environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Set up compiler (Ubuntu - GCC)
         if: runner.os == 'Linux' && matrix.compiler.name == 'gcc'
         run: |
