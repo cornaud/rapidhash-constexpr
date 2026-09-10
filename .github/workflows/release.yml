@@ -37,8 +37,6 @@ jobs:
           - os: windows-latest
             compiler:
               name: clang
-              cc: clang
-              cxx: clang++
 
     steps:
       - uses: actions/checkout@v4
@@ -46,8 +44,6 @@ jobs:
       - name: Set up CMake
         uses: lukka/get-cmake@latest
 
-      # Explicitly prepare the Visual Studio environment on Windows.
-      # This makes the VS installation discoverable by CMake.
       - name: Set up Visual Studio environment
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
@@ -64,6 +60,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang
 
+      - name: Set up Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y
+
       - name: Configure CMake (Unix)
         if: runner.os != 'Windows'
         run: |
@@ -74,26 +74,36 @@ jobs:
 
       - name: Configure CMake (Windows - MSVC)
         if: runner.os == 'Windows' && matrix.compiler.name == 'msvc'
+        shell: pwsh
         run: |
-          cmake -B build -G "Visual Studio 17 2022"
+          cmake -B build `
+            -G Ninja `
+            -DCMAKE_C_COMPILER=cl `
+            -DCMAKE_CXX_COMPILER=cl `
+            -DCMAKE_BUILD_TYPE=Release
 
       - name: Configure CMake (Windows - Clang)
         if: runner.os == 'Windows' && matrix.compiler.name == 'clang'
+        shell: pwsh
         run: |
-          cmake -B build -G "Visual Studio 17 2022" -T ClangCL
+          cmake -B build `
+            -G Ninja `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DCMAKE_CXX_COMPILER=clang-cl `
+            -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build
 
-      - name: Test - base (UNROLLED + CEXPR_ALLOW_CLASS_REPR)
-        run: ctest --build-config Release --test-dir build --verbose -R test_base
+      - name: Test - base
+        run: ctest --test-dir build --verbose -R test_base
 
-      - name: Test - portable (UNROLLED + CEXPR_ALLOW_CLASS_REPR + CEXPR_FORCE_PORTABLE_MUL)
-        run: ctest --build-config Release --test-dir build --verbose -R test_portable
+      - name: Test - portable
+        run: ctest --test-dir build --verbose -R test_portable
 
-      - name: Test - protected (UNROLLED + CEXPR_ALLOW_CLASS_REPR + PROTECTED) - Clang only
+      - name: Test - protected - Clang only
         if: matrix.compiler.name == 'clang'
-        run: ctest --build-config Release --test-dir build --verbose -R test_protected
+        run: ctest --test-dir build --verbose -R test_protected
 
   create-release:
     name: Create Release
