@@ -29,3 +29,14 @@ Convenient API :
 * Small, idiomatic API
 * Supports raw byte buffers and strings
 * Allows the hashing of C++ object representations
+
+## Benchmarks
+
+Due to some limitations in compile-time execution context, this implementation's flow
+rate is from **30% to 50%** slower on small keys. However, on large key sizes, it is
+almost identical to the reference implementation.
+
+This was measured using xxHash's [Open Source benchmark program](https://github.com/Cyan4973/xxHash/tree/release/tests/bench).
+
+This is the main reason why you should pair this library, optimized for compile-time
+workloads, with an [optimized runtime implementation](https://github.com/Nicoshev/rapidhash).
