@@ -36,6 +36,8 @@ Due to some limitations in compile-time execution context, this implementation's
 rate is from **30% to 50%** slower on small keys. However, on large key sizes, it is
 almost identical to the reference implementation.
 
+Performances are expected to be worse when compiling with MSVC, due to the absence of a 128 bits intrinsic type.
+
 This was measured using xxHash's [Open Source benchmark program](https://github.com/Cyan4973/xxHash/tree/release/tests/bench).
 
 This is the main reason why you should pair this library, optimized for compile-time
