@@ -586,8 +586,8 @@ namespace rapidhash_cexpr
 			!std::is_class_v<T> &&
 #		endif
 
-		/// These are the restrictions for std::bit_cast to be constexpr
-		///	(see https://en.cppreference.com/cpp/numeric/bit_cast).
+		// These are the restrictions for std::bit_cast to be constexpr
+		// (see https://en.cppreference.com/cpp/numeric/bit_cast).
 		std::is_object_v<T> &&
 		!std::is_union_v<T> &&
 		!std::is_pointer_v<T> &&
