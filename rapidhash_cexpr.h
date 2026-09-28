@@ -22,6 +22,13 @@
 #include <string_view>
 #include <bit>
 
+#if defined(_MSC_VER)
+#	include <intrin.h>
+#	if defined(_M_X64) && !defined(_M_ARM64EC)
+#		pragma intrinsic(_umul128)
+#	endif
+#endif
+
 
 /*
  *  Unrolled macro.
@@ -84,59 +91,42 @@ namespace rapidhash_cexpr::detail
 	};
 
 	[[nodiscard]]
-	consteval std::uint64_t rapid_mum(
-		std::uint64_t a,
-		std::uint64_t b,
-		std::uint64_t& result_high
-	) noexcept
+	consteval void rapid_mum(std::uint64_t* a, std::uint64_t* b) noexcept
 	{
 #	if defined(__SIZEOF_INT128__) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
 
-		unsigned __int128 r = static_cast<unsigned __int128>(a) * b;
-
 #		ifdef RAPIDHASH_PROTECTED
-			result_high = static_cast<std::uint64_t>(r >> 64) ^ b;
-			return static_cast<std::uint64_t>(r) ^ a;
-#		else
-			result_high = static_cast<std::uint64_t>(r >> 64);
-			return static_cast<std::uint64_t>(r);
+		__uint128_t r = *a;
+		r *= *b;
+		*a = static_cast<std::uint64_t>(r);
+		*b = static_cast<std::uint64_t>(r >> 64);
 
+#	elif defined(_MSC_VER) && (defined(_WIN64) || defined(_M_HYBRID_CHPE_ARM64)) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
+#		if defined(_M_X64)
+			*a = _umul128(*a, *b, b);
+#		else
+			std::uint64_t c = __umulh(*a, *b);
+			*a = *a * *b;
+			*b = c;
 #		endif
 
 #	else
-
-		const auto a0 = std::uint32_t(a);
-		const auto a1 = std::uint32_t(a >> 32);
-		const auto b0 = std::uint32_t(b);
-		const auto b1 = std::uint32_t(b >> 32);
-
-		const std::uint64_t p00 = std::uint64_t(a0) * b0;
-		const std::uint64_t p01 = std::uint64_t(a0) * b1;
-		const std::uint64_t p10 = std::uint64_t(a1) * b0;
-		const std::uint64_t p11 = std::uint64_t(a1) * b1;
-
-		const std::uint64_t middle =
-			(p00 >> 32) +
-			(p01 & 0xffffffffu) +
-			(p10 & 0xffffffffu);
-
-#		ifdef RAPIDHASH_PROTECTED
-			result_high = (p11 + (p01 >> 32) + (p10 >> 32) + (middle >> 32)) ^ b;
-			return ((middle << 32) | (p00 & 0xffffffffu)) ^ a;
-#		else
-			result_high = p11 + (p01 >> 32) + (p10 >> 32) + (middle >> 32);
-			return (middle << 32) | (p00 & 0xffffffffu);
-#		endif
-
+		std::uint64_t ha = *a >> 32, hb = *b >> 32, la = (std::uint32_t)*a, lb = (std::uint32_t)*b;
+		std::uint64_t rh = ha * hb, rm0 = ha * lb, rm1 = hb * la, rl = la * lb,
+			t = rl + (rm0 << 32), c = t < rl;
+		std::uint64_t lo = t + (rm1 << 32);
+		c += lo < t;
+		std::uint64_t hi = rh + (rm0 >> 32) + (rm1 >> 32) + c;
+		*a = lo;
+		*b = hi;
 #	endif
 	}
 
 	[[nodiscard]]
 	consteval std::uint64_t rapid_mix(std::uint64_t a, std::uint64_t b) noexcept
 	{
-		std::uint64_t high;
-		auto low = rapid_mum(a, b, high);
-		return low ^ high;
+		rapid_mum(&a, &b);
+		return a ^ b;
 	}
 
 	template <typename T>
@@ -312,10 +302,9 @@ namespace rapidhash_cexpr::detail
 
 		a ^= rapidhash_secret[1];
 		b ^= seed;
-		std::uint64_t high;
-		a = rapid_mum(a, b, high);
-		return rapid_mix(a ^ rapidhash_secret[7],
-			high ^ rapidhash_secret[1] ^ i);
+
+		rapid_mum(&a, &b);
+		return rapid_mix(a ^ rapidhash_secret[7], b ^ rapidhash_secret[1] ^ i);
 	}
 
 	/// Micro rapidhash v3.
@@ -399,9 +388,9 @@ namespace rapidhash_cexpr::detail
 
 		a ^= rapidhash_secret[1];
 		b ^= seed;
-		std::uint64_t high;
-		a = rapid_mum(a, b, high);
-		return rapid_mix(a ^ rapidhash_secret[7], high ^ rapidhash_secret[1] ^ i);
+
+		rapid_mum(&a, &b);
+		return rapid_mix(a ^ rapidhash_secret[7], b ^ rapidhash_secret[1] ^ i);
 	}
 
 	/// Nano rapidhash v3.
@@ -471,9 +460,9 @@ namespace rapidhash_cexpr::detail
 
 		a ^= rapidhash_secret[1];
 		b ^= seed;
-		std::uint64_t high;
-		a = rapid_mum(a, b, high);
-		return rapid_mix(a ^ rapidhash_secret[7], high ^ rapidhash_secret[1] ^ i);
+		
+		rapid_mum(&a, &b);
+		return rapid_mix(a ^ rapidhash_secret[7], b ^ rapidhash_secret[1] ^ i);
 	}
 
 } // namespace rapidhash_cexpr::detail
