@@ -4,13 +4,6 @@
 //	SPDX-License-Identifier: MIT
 //
 
-/*
- *	rapidhash v3 implementation compatible with C++20 compile-time execution.
- * 
- *	Based on Nicolas De Carli's implementation :
- *  https://github.com/Nicoshev/rapidhash
- */
-
 #pragma once
 
 #include <concepts>
@@ -21,13 +14,6 @@
 #include <array>
 #include <string_view>
 #include <bit>
-
-#if defined(_MSC_VER)
-#	include <intrin.h>
-#	if defined(_M_X64) && !defined(_M_ARM64EC)
-#		pragma intrinsic(_umul128)
-#	endif
-#endif
 
 
 /*
@@ -102,28 +88,6 @@ namespace rapidhash_cexpr::detail
 #		else
 			*a = static_cast<std::uint64_t>(r);
 			*b = static_cast<std::uint64_t>(r >> 64);
-#		endif
-
-#	elif defined(_MSC_VER) && (defined(_WIN64) || defined(_M_HYBRID_CHPE_ARM64)) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
-#		if defined(_M_X64)
-#			ifdef RAPIDHASH_PROTECTED
-				std::uint64_t a_tmp, b_tmp;
-				a_tmp = _umul128(*a, *b, &b_tmp);
-				*a ^= a_tmp;  *b ^= b_tmp;
-#			else
-				*a = _umul128(*a, *b, b);
-#			endif
-#		else
-#			ifdef RAPIDHASH_PROTECTED
-				std::uint64_t a_tmp, b_tmp;
-				b_tmp = __umulh(*a, *b);
-				a_tmp = *a * *b;
-				*a ^= a_tmp;  *b ^= b_tmp;
-#			else
-				std::uint64_t c = __umulh(*a, *b);
-				*a = *a * *b;
-				*b = c;
-#			endif
 #		endif
 
 #	else
