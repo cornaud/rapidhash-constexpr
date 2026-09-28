@@ -45,8 +45,8 @@
 /*
  *	This consteval implementation adds the RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL macro.
  * 
- *	It is used to force the worst-case (slowest) path (compiling with MSVC or any other compiler
- *	without a custom 128 bits type) on any compiler (for testing and benchmarking).
+ *	It is used to force the fallback path on the basic rapid_mum implementation,
+ *	mainly for testing purposes.
  */
 
 /*
@@ -76,31 +76,6 @@ namespace rapidhash_cexpr::detail
 		0xaaaaaaaaaaaaaaaa
 	};
 
-/*
- *	MSVC's constexpr engine has huge issues working properly with pointers, so passing arguments as
- *	pointers and writing the result back at those addresses as expected crashes the compiler.
- */
-#if defined(_MSC_VER)
-	///	Returns the low part and writes the high part in result_high.
-	[[nodiscard]]
-	consteval std::uint64_t rapid_mum(std::uint64_t a, std::uint64_t b, std::uint64_t& result_high) noexcept
-	{
-		std::uint64_t ha = a >> 32, hb = b >> 32, la = (std::uint32_t)a, lb = (std::uint32_t)b;
-		std::uint64_t rh = ha * hb, rm0 = ha * lb, rm1 = hb * la, rl = la * lb,
-			t = rl + (rm0 << 32), c = t < rl;
-		std::uint64_t lo = t + (rm1 << 32);
-		c += lo < t;
-		std::uint64_t hi = rh + (rm0 >> 32) + (rm1 >> 32) + c;
-#		ifdef RAPIDHASH_PROTECTED
-			result_high = hi ^ b;
-			return lo ^ a;
-#		else
-			result_high = hi;
-			return lo;
-#		endif
-	}
-
-#else
 	[[nodiscard]]
 	consteval void rapid_mum(std::uint64_t* a, std::uint64_t* b) noexcept
 	{
@@ -132,7 +107,28 @@ namespace rapidhash_cexpr::detail
 #	endif
 	}
 
-#endif
+ 	///	MSVC's constexpr engine has huge issues working properly with pointers, so passing arguments as
+ 	///	pointers and writing the result back at those addresses as expected crashes the compiler.
+	///	This overload is the closest we can get to the original optimized form without MSVC whining.
+	///
+	///	Returns the low part and writes the high part in result_high.
+	[[nodiscard]]
+	consteval std::uint64_t rapid_mum(std::uint64_t a, std::uint64_t b, std::uint64_t& result_high) noexcept
+	{
+		std::uint64_t ha = a >> 32, hb = b >> 32, la = (std::uint32_t)a, lb = (std::uint32_t)b;
+		std::uint64_t rh = ha * hb, rm0 = ha * lb, rm1 = hb * la, rl = la * lb,
+			t = rl + (rm0 << 32), c = t < rl;
+		std::uint64_t lo = t + (rm1 << 32);
+		c += lo < t;
+		std::uint64_t hi = rh + (rm0 >> 32) + (rm1 >> 32) + c;
+#		ifdef RAPIDHASH_PROTECTED
+			result_high = hi ^ b;
+			return lo ^ a;
+#		else
+			result_high = hi;
+			return lo;
+#		endif
+	}
 
 	[[nodiscard]]
 	consteval std::uint64_t rapid_mix(std::uint64_t a, std::uint64_t b) noexcept
@@ -586,7 +582,7 @@ namespace rapidhash_cexpr
 
 	/*
 	 *	For C++ objects
-	 *	(int, float, ..., structs, classes)
+	 *	(int, float, ..., struct, class)
 	 * 
 	 *	This API allows you to hash more complex typed objects, not only raw bytes, at compilation.
 	 * 
