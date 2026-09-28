@@ -85,7 +85,7 @@ namespace rapidhash_cexpr::detail
 	[[nodiscard]]
 	consteval std::uint64_t rapid_mum(std::uint64_t a, std::uint64_t b, std::uint64_t& result_high) noexcept
 	{
-		std::uint64_t ha = a >> 32, hb = b >> 32, la = (std::uint32_t)a, lb = (std::uint32_t)*b;
+		std::uint64_t ha = a >> 32, hb = b >> 32, la = (std::uint32_t)a, lb = (std::uint32_t)b;
 		std::uint64_t rh = ha * hb, rm0 = ha * lb, rm1 = hb * la, rl = la * lb,
 			t = rl + (rm0 << 32), c = t < rl;
 		std::uint64_t lo = t + (rm1 << 32);
