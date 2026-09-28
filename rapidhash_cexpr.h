@@ -94,20 +94,36 @@ namespace rapidhash_cexpr::detail
 	consteval void rapid_mum(std::uint64_t* a, std::uint64_t* b) noexcept
 	{
 #	if defined(__SIZEOF_INT128__) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
-
-#		ifdef RAPIDHASH_PROTECTED
 		__uint128_t r = *a;
 		r *= *b;
-		*a = static_cast<std::uint64_t>(r);
-		*b = static_cast<std::uint64_t>(r >> 64);
+#		ifdef RAPIDHASH_PROTECTED
+			*a ^= static_cast<std::uint64_t>(r);
+			*b ^= static_cast<std::uint64_t>(r >> 64);
+#		else
+			*a = static_cast<std::uint64_t>(r);
+			*b = static_cast<std::uint64_t>(r >> 64);
+#		endif
 
 #	elif defined(_MSC_VER) && (defined(_WIN64) || defined(_M_HYBRID_CHPE_ARM64)) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
 #		if defined(_M_X64)
-			*a = _umul128(*a, *b, b);
+#			ifdef RAPIDHASH_PROTECTED
+				std::uint64_t a_tmp, b_tmp;
+				a_tmp = _umul128(*a, *b, &b_tmp);
+				*a ^= a_tmp;  *b ^= b_tmp;
+#			else
+				*a = _umul128(*a, *b, b);
+#			endif
 #		else
-			std::uint64_t c = __umulh(*a, *b);
-			*a = *a * *b;
-			*b = c;
+#			ifdef RAPIDHASH_PROTECTED
+				std::uint64_t a_tmp, b_tmp;
+				b_tmp = __umulh(*a, *b);
+				a_tmp = *a * *b;
+				*a ^= a_tmp;  *b ^= b_tmp;
+#			else
+				std::uint64_t c = __umulh(*a, *b);
+				*a = *a * *b;
+				*b = c;
+#			endif
 #		endif
 
 #	else
@@ -117,8 +133,13 @@ namespace rapidhash_cexpr::detail
 		std::uint64_t lo = t + (rm1 << 32);
 		c += lo < t;
 		std::uint64_t hi = rh + (rm0 >> 32) + (rm1 >> 32) + c;
-		*a = lo;
-		*b = hi;
+#		ifdef RAPIDHASH_PROTECTED
+			*a ^= lo;
+			*b ^= hi;
+#		else
+			*a = lo;
+			*b = hi;
+#		endif
 #	endif
 	}
 
