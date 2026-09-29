@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../rapidhash_cexpr.h"
+#include <rapidhash_cexpr.h>
 
 #include <array>
 #include <cstdint>
@@ -39,7 +39,9 @@ static_assert(sizeof(ClassTestMock) == sizeof(std::uint64_t) * 2);
 constexpr ClassTestMock kRapidhashClassTestInput =
 	{ 0xDEADBEEFDEADBEEF, 0xCAFEBABECAFEBABE };
 
+
 /*-----------------------------------------------------------------------------------------------*/
+
 
 using namespace rapidhash_cexpr;
 

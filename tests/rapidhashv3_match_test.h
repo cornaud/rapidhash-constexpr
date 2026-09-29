@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../rapidhash_cexpr.h"
+#include <rapidhash_cexpr.h>
 
 #include <cstdint>
 #include <cstddef>
@@ -26,7 +26,7 @@ constexpr std::uint64_t kTestSeed = UINT64_MAX;
 
 constexpr std::size_t kMaxKeySize = 897;
 
-constexpr auto test_key = [] {
+constexpr auto kTestKey = [] {
 	std::array<std::uint8_t, kMaxKeySize> key{};
 	key.fill(static_cast<std::uint8_t>(0xFF));
 	return key;
@@ -130,113 +130,82 @@ struct MatchTestEntry
 		UINT64_C(1721829565746737837)
 	};
 
-#endif // RAPIDHASH_FAST
+#endif
+
 
 /*-----------------------------------------------------------------------------------------------*/
+
 
 using namespace rapidhash_cexpr::detail;
-
-consteval bool test_match_classic(MatchTestEntry test_entry)
-{
-	auto current_key = std::span{ test_key }.first(test_entry.key_size);
-	std::uint64_t output = rapidhash_internal(current_key, kTestSeed);
-	if (output == test_entry.expected_result)
-	{
-		return true;
-	}
-	return false;
-}
-
-consteval bool test_match_micro(MatchTestEntry test_entry)
-{
-	auto current_key = std::span{ test_key }.first(test_entry.key_size);
-	std::uint64_t output = rapidhash_micro_internal(current_key, kTestSeed);
-	if (output == test_entry.expected_result)
-	{
-		return true;
-	}
-	return false;
-}
-
-consteval bool test_match_nano(MatchTestEntry test_entry)
-{
-	auto current_key = std::span{ test_key }.first(test_entry.key_size);
-	std::uint64_t output = rapidhash_nano_internal(current_key, kTestSeed);
-	if (output == test_entry.expected_result)
-	{
-		return true;
-	}
-	return false;
-}
-
-/*-----------------------------------------------------------------------------------------------*/
 
 // For these modifiers, we only need to test for one version (like Nano), as errors on the others
 // would be catched by the individual tests.
 #ifndef RAPIDHASH_PROTECTED
-	static_assert(test_match_classic(kRapidhashTests[0]));
-	static_assert(test_match_classic(kRapidhashTests[1]));
-	static_assert(test_match_classic(kRapidhashTests[2]));
-	static_assert(test_match_classic(kRapidhashTests[3]));
-	static_assert(test_match_classic(kRapidhashTests[4]));
-	static_assert(test_match_classic(kRapidhashTests[5]));
-	static_assert(test_match_classic(kRapidhashTests[6]));
-	static_assert(test_match_classic(kRapidhashTests[7]));
-	static_assert(test_match_classic(kRapidhashTests[8]));
-	static_assert(test_match_classic(kRapidhashTests[9]));
-	static_assert(test_match_classic(kRapidhashTests[10]));
-	static_assert(test_match_classic(kRapidhashTests[11]));
-	static_assert(test_match_classic(kRapidhashTests[12]));
-	static_assert(test_match_classic(kRapidhashTests[13]));
-	static_assert(test_match_classic(kRapidhashTests[14]));
-	static_assert(test_match_classic(kRapidhashTests[15]));
-	static_assert(test_match_classic(kRapidhashTests[16]));
-	static_assert(test_match_classic(kRapidhashTests[17]));
-	static_assert(test_match_classic(kRapidhashTests[18]));
-	static_assert(test_match_classic(kRapidhashTests[19]));
-	static_assert(test_match_classic(kRapidhashTests[20]));
-	static_assert(test_match_classic(kRapidhashTests[21]));
-	static_assert(test_match_classic(kRapidhashTests[22]));
-	static_assert(test_match_classic(kRapidhashTests[23]));
-	static_assert(test_match_classic(kRapidhashTests[24]));
-	static_assert(test_match_classic(kRapidhashTests[25]));
-	static_assert(test_match_classic(kRapidhashTests[26]));
-	static_assert(test_match_classic(kRapidhashTests[27]));
-	static_assert(test_match_classic(kRapidhashTests[28]));
-	static_assert(test_match_classic(kRapidhashTests[29]));
-	static_assert(test_match_classic(kRapidhashTests[30]));
-	static_assert(test_match_classic(kRapidhashTests[31]));
 
-	static_assert(test_match_micro(kRapidhashTests[0]));
-	static_assert(test_match_micro(kRapidhashTests[1]));
-	static_assert(test_match_micro(kRapidhashTests[2]));
-	static_assert(test_match_micro(kRapidhashTests[3]));
-	static_assert(test_match_micro(kRapidhashTests[4]));
-	static_assert(test_match_micro(kRapidhashTests[5]));
-	static_assert(test_match_micro(kRapidhashTests[6]));
-	static_assert(test_match_micro(kRapidhashTests[7]));
-	static_assert(test_match_micro(kRapidhashTests[8]));
-	static_assert(test_match_micro(kRapidhashTests[9]));
-	static_assert(test_match_micro(kRapidhashTests[10]));
-	static_assert(test_match_micro(kRapidhashTests[11]));
-	static_assert(test_match_micro(kRapidhashTests[12]));
-	static_assert(test_match_micro(kRapidhashTests[13]));
-	static_assert(test_match_micro(kRapidhashTests[14]));
+	static_assert([]() -> bool
+	{
+		for (auto i = 0; i < 32; i++)
+		{
+			auto test_entry = kRapidhashTests[i];
+			auto current_key = std::span{ kTestKey }.first(test_entry.key_size);
+			std::uint64_t output = rapidhash_internal(current_key, kTestSeed);
+			if (output != test_entry.expected_result)
+			{
+				return false;
+			}
+		}
 
-	static_assert(test_match_micro(kOutOfBoundTestMicro));
+		return true;
+	});
+
+	static_assert([]() -> bool
+	{
+		auto test_entry = kOutOfBoundTestMicro;
+		auto current_key = std::span{ kTestKey }.first(test_entry.key_size);
+		std::uint64_t output = rapidhash_internal(current_key, kTestSeed);
+		if (output != test_entry.expected_result)
+		{
+			return false;
+		}
+
+		for (auto i = 0; i < 15; i++)
+		{
+			test_entry = kRapidhashTests[i];
+			auto current_key = std::span{ kTestKey }.first(test_entry.key_size);
+			std::uint64_t output = rapidhash_internal(current_key, kTestSeed);
+			if (output != test_entry.expected_result)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	});
+
+#else
+
+	static_assert([]() -> bool
+	{
+		auto test_entry = kOutOfBoundTestNano;
+		auto current_key = std::span{ kTestKey }.first(test_entry.key_size);
+		std::uint64_t output = rapidhash_internal(current_key, kTestSeed);
+		if (output != test_entry.expected_result)
+		{
+			return false;
+		}
+
+		for (auto i = 0; i < 11; i++)
+		{
+			test_entry = kRapidhashTests[i];
+			auto current_key = std::span{ kTestKey }.first(test_entry.key_size);
+			std::uint64_t output = rapidhash_internal(current_key, kTestSeed);
+			if (output != test_entry.expected_result)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	});
 
 #endif
-
-	static_assert(test_match_nano(kRapidhashTests[0]));
-	static_assert(test_match_nano(kRapidhashTests[1]));
-	static_assert(test_match_nano(kRapidhashTests[2]));
-	static_assert(test_match_nano(kRapidhashTests[3]));
-	static_assert(test_match_nano(kRapidhashTests[4]));
-	static_assert(test_match_nano(kRapidhashTests[5]));
-	static_assert(test_match_nano(kRapidhashTests[6]));
-	static_assert(test_match_nano(kRapidhashTests[7]));
-	static_assert(test_match_nano(kRapidhashTests[8]));
-	static_assert(test_match_nano(kRapidhashTests[9]));
-	static_assert(test_match_nano(kRapidhashTests[10]));
-
-	static_assert(test_match_nano(kOutOfBoundTestNano));
