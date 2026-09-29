@@ -76,7 +76,7 @@ namespace rapidhash_cexpr::detail
 		0xaaaaaaaaaaaaaaaa
 	};
 
-	consteval void rapid_mum(std::uint64_t* a, std::uint64_t* b) noexcept
+	constexpr void rapid_mum(std::uint64_t* a, std::uint64_t* b) noexcept
 	{
 #	if defined(__SIZEOF_INT128__) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
 		__uint128_t r = *a;
@@ -112,7 +112,7 @@ namespace rapidhash_cexpr::detail
 	///
 	///	Returns the low part and writes the high part in result_high.
 	[[nodiscard]]
-	consteval std::uint64_t rapid_mum(std::uint64_t a, std::uint64_t b, std::uint64_t& result_high) noexcept
+	constexpr std::uint64_t rapid_mum(std::uint64_t a, std::uint64_t b, std::uint64_t& result_high) noexcept
 	{
 		std::uint64_t ha = a >> 32, hb = b >> 32, la = (std::uint32_t)a, lb = (std::uint32_t)b;
 		std::uint64_t rh = ha * hb, rm0 = ha * lb, rm1 = hb * la, rl = la * lb,
@@ -130,7 +130,7 @@ namespace rapidhash_cexpr::detail
 	}
 
 	[[nodiscard]]
-	consteval std::uint64_t rapid_mix(std::uint64_t a, std::uint64_t b) noexcept
+	constexpr std::uint64_t rapid_mix(std::uint64_t a, std::uint64_t b) noexcept
 	{
 #	if defined(_MSC_VER)
 		std::uint64_t result_high;
@@ -153,7 +153,7 @@ namespace rapidhash_cexpr::detail
 		requires std::same_as<R, std::uint64_t> ||
 		std::same_as<R, std::uint32_t>
 	[[nodiscard]]
-	consteval R rapid_read(const T* p) noexcept
+	constexpr R rapid_read(const T* p) noexcept
 	{
 		R value = 0;
 
@@ -176,7 +176,7 @@ namespace rapidhash_cexpr::detail
 	/// Classic rapidhash v3.
 	template <ByteType T, std::size_t N>
 	[[nodiscard]]
-	consteval std::uint64_t rapidhash_internal(std::span<const T, N> input, std::uint64_t seed = 0) noexcept
+	constexpr std::uint64_t rapidhash_internal(std::span<const T, N> input, std::uint64_t seed = 0) noexcept
 	{
 		auto p = input.data();
 		std::uint64_t len = input.size_bytes();
@@ -330,7 +330,7 @@ namespace rapidhash_cexpr::detail
 	/// Micro rapidhash v3.
 	template <ByteType T, std::size_t N>
 	[[nodiscard]]
-	consteval std::uint64_t rapidhash_micro_internal(std::span<const T, N> input, std::uint64_t seed = 0) noexcept
+	constexpr std::uint64_t rapidhash_micro_internal(std::span<const T, N> input, std::uint64_t seed = 0) noexcept
 	{
 		auto p = input.data();
 		std::uint64_t len = input.size_bytes();
@@ -423,7 +423,7 @@ namespace rapidhash_cexpr::detail
 	/// Nano rapidhash v3.
 	template <ByteType T, std::size_t N>
 	[[nodiscard]]
-	consteval std::uint64_t rapidhash_nano_internal(std::span<const T, N> input, std::uint64_t seed = 0) noexcept
+	constexpr std::uint64_t rapidhash_nano_internal(std::span<const T, N> input, std::uint64_t seed = 0) noexcept
 	{
 		auto p = input.data();
 		std::uint64_t len = input.size_bytes();
