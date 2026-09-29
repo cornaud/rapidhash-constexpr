@@ -38,10 +38,10 @@ constexpr auto kTestKey = [] {
 struct MatchTestEntry
 {
 	// Size of the key in bytes.
-	const std::size_t key_size;
+	std::size_t key_size;
 
 	// Result of the canonical algorithm for the same input.
-	const std::uint64_t expected_result;
+	std::uint64_t expected_result;
 };
 
 
