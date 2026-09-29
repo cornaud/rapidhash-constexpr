@@ -76,7 +76,6 @@ namespace rapidhash_cexpr::detail
 		0xaaaaaaaaaaaaaaaa
 	};
 
-	[[nodiscard]]
 	consteval void rapid_mum(std::uint64_t* a, std::uint64_t* b) noexcept
 	{
 #	if defined(__SIZEOF_INT128__) && !defined(RAPIDHASH_CEXPR_FORCE_PORTABLE_MUL)
